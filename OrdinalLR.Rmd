@@ -1,0 +1,3414 @@
+---
+title: "R stats of nutrition study"
+author: "Alex German"
+date: "10 June 2022"
+output:
+  pdf_document: default
+  word_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+
+# Create data frame for analysis
+NB need to run "Read_data_101.Rtm" first to create dataset
+```{r include=FALSE}
+knitr::knit("Read_data_101.rmd")
+```
+
+
+# CHECK EFFECT OF OWNER CHARACTERISTICS - simple ordinal regression
+
+## LOCATION ordinal regression for HEALTH
+```{r chunkOR49}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Location, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR50}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Location, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR50a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Location"))
+pulkrob.deviance(m, c("Location"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR50b}
+Rsquared(m)
+```
+
+
+## SETTING ordinal regression for HEALTH
+```{r chunkOR51}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ setting, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR52}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ setting, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR51a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("setting"))
+pulkrob.deviance(m, c("setting"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR51b}
+Rsquared(m)
+```
+
+
+
+## URBAN ordinal regression for HEALTH
+```{r chunkOR53}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Urban, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR54}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Urban, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR54a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Urban"))
+pulkrob.deviance(m, c("Urban"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR54b}
+Rsquared(m)
+```
+
+
+## LOCATION + URBAN ordinal regression for HEALTH
+```{r chunkOR55}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Location + Urban, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+# VIFs
+car::vif(m)
+```
+
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR56}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Location + Urban, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR56a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Location","Urban"))
+pulkrob.deviance(m, c("Location","Urban"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR56b}
+Rsquared(m)
+```
+
+
+## LOCATION * URBAN ordinal regression for HEALTH
+```{r chunkOR57}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Location*Urban, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+# VIFs
+car::vif(m)
+```
+
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR58}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Location*Urban, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR58a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Location","Urban"))
+pulkrob.deviance(m, c("Location","Urban"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR58b}
+Rsquared(m)
+```
+
+
+
+## EDUCATION ordinal regression for HEALTH
+```{r chunkOR60}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Education, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR61}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Education, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR61a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Education"))
+pulkrob.deviance(m, c("Education"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR61b}
+Rsquared(m)
+```
+
+
+
+## EDUCATION_S ordinal regression for HEALTH
+```{r chunkOR62}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Education_S, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR63}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Education_S, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR63a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Education_S"))
+pulkrob.deviance(m, c("Education_S"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR63b}
+Rsquared(m)
+```
+
+
+## EDUCATION_S2 ordinal regression for HEALTH
+```{r chunkOR62i}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Education_S2, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR63i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Education_S2, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR63ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Education_S2"))
+pulkrob.deviance(m, c("Education_S2"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR63bi}
+Rsquared(m)
+```
+
+
+
+## ANIMAL CAREER 2 ordinal regression for HEALTH
+```{r chunkOR64}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Animal_Career2, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR65}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Animal_Career2, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR65a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Animal_Career2"))
+pulkrob.deviance(m, c("Animal_Career2"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR65b}
+Rsquared(m)
+```
+
+
+## ANIMAL CAREER Binary ordinal regression for HEALTH
+```{r chunkOR66}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Animal_Career_BINARY, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR67}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Animal_Career_BINARY, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR67a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Animal_Career_BINARY"))
+pulkrob.deviance(m, c("Animal_Career_BINARY"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR67b}
+Rsquared(m)
+```
+
+
+## Tabulate Health2 and Income
+```{r chunkOR68}
+## three way cross tabs (xtabs) and flatten the table
+ftable(xtabs(~ Health2 + Income, data = ml))
+```
+
+## Chi squared test of Health2 and Income
+```{r chunkOR69}
+
+table(ml$Health2, ml$Income)
+chisq.test(ml$Health2, ml$Income, correct=FALSE)
+```
+
+
+
+## INCOME ordinal regression for HEALTH
+```{r chunkOR70}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Income, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR71}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Income, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR71a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Income"))
+pulkrob.deviance(m, c("Income"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR71b}
+Rsquared(m)
+```
+
+
+
+## INCOME2 ordinal regression for HEALTH
+```{r chunkOR70i}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Income2, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR71i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Income2, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR71ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Income2"))
+pulkrob.deviance(m, c("Income2"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR71bi}
+Rsquared(m)
+```
+
+
+
+## C_Age ordinal regression for HEALTH
+```{r chunkOR72}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Age, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR73}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Age, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR73a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("C_Age"))
+pulkrob.deviance(m, c("C_Age"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR73b}
+Rsquared(m)
+```
+
+
+
+## C_Age2 ordinal regression for HEALTH
+```{r chunkOR72i}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Age2, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR73i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Age2, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR73ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("C_Age2"))
+pulkrob.deviance(m, c("C_Age2"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR73bi}
+Rsquared(m)
+```
+
+
+
+## C_Gender ordinal regression for HEALTH
+```{r chunkOR74}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Gender, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR75}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Gender, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR75a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("C_Gender"))
+pulkrob.deviance(m, c("C_Gender"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR75b}
+Rsquared(m)
+```
+
+
+
+## C_Diet ordinal regression for HEALTH
+```{r chunkOR76}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Diet, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR77}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Diet, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR77a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("C_Diet"))
+pulkrob.deviance(m, c("C_Diet"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR77b}
+Rsquared(m)
+```
+
+
+
+## C_Diet_Vegan ordinal regression for HEALTH
+```{r chunkOR78}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Diet_Vegan, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR79}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Diet_Vegan, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR79a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("C_Diet_Vegan"))
+pulkrob.deviance(m, c("C_Diet_Vegan"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR79b}
+Rsquared(m)
+```
+
+
+
+## C_Diet_Vegan_Veggie ordinal regression for HEALTH
+```{r chunkOR80}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Diet_Vegan_Veggie, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR81}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Diet_Vegan_Veggie, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### test proportional odds assumption with likelihood ratio test vs multinomial model
+```{r}
+ordinal_m <- vglm(Health2 ~ C_Diet_Vegan_Veggie, propodds, data = ml)
+multinomial_m <- vglm(Health2 ~ C_Diet_Vegan_Veggie, cumulative, data = ml)
+m_lrt <- lrtest(ordinal_m,multinomial_m)
+m_lrt
+```
+
+### Test goodness of fit
+```{r chunkOR81a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("C_Diet_Vegan_Veggie"))
+pulkrob.deviance(m, c("C_Diet_Vegan_Veggie"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR81b}
+Rsquared(m)
+```
+
+
+
+
+# CHECK EFFECT OF DOG CHARACTERISTICS - simple ordinal regression
+
+
+## DOG DIET ordinal regression for HEALTH
+```{r chunkOR3i}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR4i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR4ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet"))
+pulkrob.deviance(m, c("D_Diet"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR4bi}
+Rsquared(m)
+```
+
+
+## DOG DIET VEGAN ordinal regression for HEALTH
+```{r chunkOR3}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet_Vegan, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR4}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet_Vegan, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR4a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Vegan"))
+pulkrob.deviance(m, c("D_Diet_Vegan"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR4b}
+Rsquared(m)
+```
+
+
+
+## CLIENT DIET VEGAN + DOG DIET VEGAN ordinal regression for HEALTH
+```{r chunkOR5}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Diet_Vegan + D_Diet_Vegan, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR6}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet_Vegan + C_Diet_Vegan, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR6a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Vegan","C_Diet_Vegan"))
+pulkrob.deviance(m, c("D_Diet_Vegan","C_Diet_Vegan"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR6b}
+Rsquared(m)
+```
+### VIFs
+```{r chunkOR6bi}
+vif(m)
+```
+
+
+## CLIENT DIET VEGAN * DOG DIET VEGAN ordinal regression for HEALTH
+```{r chunkOR7}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ C_Diet_Vegan*D_Diet_Vegan, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+## Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR8}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ C_Diet_Vegan*D_Diet_Vegan, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+## Test goodness of fit
+```{r chunkOR8a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Vegan","C_Diet_Vegan"))
+pulkrob.deviance(m, c("D_Diet_Vegan","C_Diet_Vegan"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR8b}
+Rsquared(m)
+```
+
+
+### VIFs
+```{r chunkOR8bi}
+vif(m)
+```
+
+
+## DOG DIET RAW ordinal regression for HEALTH
+```{r chunkOR10}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet_Raw, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR11}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet_Raw, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR11a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Raw"))
+pulkrob.deviance(m, c("D_Diet_Raw"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR11bx}
+Rsquared(m)
+```
+
+
+
+## DOG DIET RAW + VEGAN ordinal regression for HEALTH
+```{r chunkOR10i}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet_Raw + D_Diet_Vegan, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR11i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet_Raw + D_Diet_Vegan, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR11ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Raw", "D_Diet_Vegan"))
+pulkrob.deviance(m, c("D_Diet_Raw", "D_Diet_Vegan"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR11biiy}
+Rsquared(m)
+```
+### VIFs
+```{r chunkOR11bi}
+vif(m)
+```
+
+
+
+## DOG DIET RAW + VEGAN_VEGGIE ordinal regression for HEALTH
+```{r chunkOR10ii}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet_Raw + D_Diet_Vegan_Veggie, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR11ii}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet_Raw + D_Diet_Vegan_Veggie, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+# Test goodness of fit
+```{r chunkOR11aii}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Raw", "D_Diet_Vegan_Veggie"))
+pulkrob.deviance(m, c("D_Diet_Raw", "D_Diet_Vegan_Veggie"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR11biiz}
+Rsquared(m)
+```
+
+### VIFs
+```{r chunkOR11biixa}
+vif(m)
+```
+
+
+## DOG SEX ordinal regression for HEALTH
+```{r chunkOR12i}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Sex, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR13i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Sex, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r  chunkOR13ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Sex"))
+pulkrob.deviance(m, c("D_Sex"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR13bi}
+Rsquared(m)
+```
+
+
+
+## DOG NEUTER ordinal regression for HEALTH
+```{r chunkOR12}
+
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Neuter, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR13}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Neuter, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r  chunkOR13a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Neuter"))
+pulkrob.deviance(m, c("D_Neuter"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR13b}
+Rsquared(m)
+```
+
+
+## D_Sex + D_Neuter ordinal regression for HEALTH
+```{r chunkOR88}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Sex + D_Neuter, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+# VIFs
+car::vif(m)
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR89}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Sex + D_Neuter, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR89a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Sex","D_Neuter"))
+pulkrob.deviance(m, c("D_Sex","D_Neuter"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR89b}
+Rsquared(m)
+```
+
+
+
+## D_Sex * D_Neuter ordinal regression for HEALTH
+```{r chunkOR90}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Sex*D_Neuter, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+# VIFs
+car::vif(m)
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR91}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Sex*D_Neuter, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR91a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Sex","D_Neuter"))
+pulkrob.deviance(m, c("D_Sex","D_Neuter"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR91b}
+Rsquared(m)
+```
+
+
+
+
+## Tabulate Health2 on Therapeutic diet
+```{r chunkOR40}
+## two way cross tabs (xtabs) and flatten the table
+ftable(xtabs(~ Health2 + Therapeutic_Food, data = ml))
+
+# Chi squared test of NEUTERED vs D-RAW
+table(ml$Health2, ml$Therapeutic_Food)
+chisq.test(ml$Health2, ml$Therapeutic_Food, correct=FALSE)
+```
+
+## Tabulate D_Diet on Therapeutic diet
+```{r chunkORII41}
+## two way cross tabs (xtabs) and flatten the table
+ftable(xtabs(~ D_Diet + Therapeutic_Food, data = ml))
+
+# Chi squared test of NEUTERED vs D-RAW
+table(ml$D_Diet, ml$Therapeutic_Food)
+chisq.test(ml$D_Diet, ml$Therapeutic_Food, correct=TRUE)
+```
+
+
+## THERAPEUTIC DIET ordinal regression for HEALTH
+```{r chunkOR42}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Therapeutic_Food, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR43}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet + Therapeutic_Food, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR43a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Therapeutic_Food"))
+pulkrob.deviance(m, c("Therapeutic_Food"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR43b}
+Rsquared(m)
+```
+
+
+## DOG DIET + THERAPEUTIC DIET ordinal regression for HEALTH
+```{r chunkOR44}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet + Therapeutic_Food, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR45}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet + Therapeutic_Food, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+# Test goodness of fit
+```{r chunkOR45a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet","Therapeutic_Food"))
+pulkrob.deviance(m, c("D_Diet","Therapeutic_Food"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR45b}
+Rsquared(m)
+```
+
+### VIFs
+```{r chunkOR45c}
+car::vif(m)
+```
+
+
+## DOG DIET * THERAPEUTIC DIET ordinal regression for HEALTH
+```{r chunkOR46}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet*Therapeutic_Food, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+# VIFs
+car::vif(m)
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR47}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet*Therapeutic_Food, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR47a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet","Therapeutic_Food"))
+pulkrob.deviance(m, c("D_Diet","Therapeutic_Food"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR47b}
+Rsquared(m)
+```
+
+
+
+## DOG DIET_VEGAN + DOG_DIET_RAW + THERAPEUTIC DIET ordinal regression for HEALTH
+```{r chunkORx48}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Diet_Vegan + D_Diet_Raw + Therapeutic_Food, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkORx49}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Diet_Vegan + D_Diet_Raw + Therapeutic_Food, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR4x5a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Diet_Vegan","D_Diet_Raw","Therapeutic_Food"))
+pulkrob.deviance(m, c("D_Diet_Vegan","D_Diet_Raw","Therapeutic_Food"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkORx45b}
+Rsquared(m)
+```
+
+### VIFs
+```{r chunkORx45c}
+car::vif(m)
+```
+
+
+
+## SIZE ordinal regression for HEALTH
+```{r chunkOR82}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Size, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR83}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Size, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r  chunkOR83a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Size"))
+pulkrob.deviance(m, c("Size"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR83b}
+Rsquared(m)
+```
+
+
+## SIZE2 ordinal regression for HEALTH
+```{r chunkOR82i}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Size2, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR83i}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Size2, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r  chunkOR83ai}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Size2"))
+pulkrob.deviance(m, c("Size2"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR83bi}
+Rsquared(m)
+```
+
+
+
+## SIZE_GIANT ordinal regression for HEALTH
+```{r chunkOR82ii}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Size_Giant, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR83ii}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Size_Giant, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r  chunkOR83aii}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Size_Giant"))
+pulkrob.deviance(m, c("Size_Giant"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR83bii}
+Rsquared(m)
+```
+
+
+
+## D_Age ordinal regression for HEALTH
+```{r chunkOR84}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Age, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR85}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Age, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR85a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Age"))
+pulkrob.deviance(m, c("D_Age"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR85b}
+Rsquared(m)
+```
+
+
+
+## D_Age_quant ordinal regression for HEALTH
+### Note that the model fits the data better than D_Age as continuous
+```{r chunkOR86}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ D_Age_quant, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR87}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ D_Age_quant, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR87a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("D_Age_quant"))
+pulkrob.deviance(m, c("D_Age_quant"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR87b}
+Rsquared(m)
+```
+
+
+
+
+# CHECK EFFECT OF DOG HEALTH CHARACTERISTICS - simple ordinal regression
+
+## Therapeutic food ordinal regression for HEALTH
+```{r chunkOR92}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Therapeutic_Food, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR93}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Therapeutic_Food, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR93a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Therapeutic_Food"))
+pulkrob.deviance(m, c("Therapeutic_Food"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR93b}
+Rsquared(m)
+```
+
+
+
+## VISITS ordinal regression for HEALTH
+```{r chunkOR94}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Visits, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR95}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~Visits, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Visits"))
+pulkrob.deviance(m, c("Visits"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR95b}
+Rsquared(m)
+```
+
+
+## VISITS2 ordinal regression for HEALTH
+```{r chunkOR96}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Visits2, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR97}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Visits2, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR97a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Visits2"))
+pulkrob.deviance(m, c("Visits2"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR97b}
+Rsquared(m)
+```
+
+
+
+## MEDS ordinal regression for HEALTH
+```{r chunkOR98}
+# fit ordered logit model and store results 'm'
+m <- polr(Health2 ~ Meds, data = ml, Hess=TRUE)
+# view a summary of the model
+summary(m)
+BIC(m)
+#store table
+(ctable <- coef(summary(m)))
+# calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+
+# combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios
+exp(coef(m))
+(ci <- confint(m, level = 0.99)) # default method gives profiled CIs
+confint.default(m, level = 0.99) # CIs assuming normality
+## OR and CI
+exp(cbind(OR = coef(m), ci))
+```
+
+### Checking proportionality assumption for ordinal logistic regression
+```{r chunkOR99}
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+(s <- with(ml, summary(as.numeric(Health2) ~ Meds, fun=sf)))
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3] 
+s # print
+
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+```
+
+### Test goodness of fit
+```{r chunkOR99a}
+lipsitz.test(m)
+pulkrob.chisq(m, c("Meds"))
+pulkrob.deviance(m, c("Meds"))
+model.data <- augment(m)
+logitgof(model.data$Health2,fitted(m))
+```
+
+### Calculating R squared
+```{r chunkOR99b}
+Rsquared(m)
+```
+
+# PROPORTIONAL ODDS ASSUMPTION NOT MET FOR VISITS, MEDS AND GIANT BREED
+## Repeat using partial proportional odds logistics regression with VGLM
+### Include LRT tests given issues with Hauck_Donner effect.
+### NB exponent signs made negative to ensure accurate OR are produced.
+
+
+##  Visits ordinal logistic regression without proportional odds for HEALTH
+### n.b. needed to replace with Visits2 as  not possible
+```{r chunkORII18}
+# fit ordered logit model and store results 'm'
+m <- vglm(Health2 ~ Visits2,  family=cumulative(parallel = FALSE ~ Visits2), data = ml)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII19yy}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII19aa}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+Rsquared(m)
+```
+
+
+
+
+
+## Size_Giant ordinal logistic regression without proportional odds for HEALTH
+```{r chunkORII18i}
+# fit ordered logit model and store results 'm'
+m <- vglm(Health2 ~ Size_Giant,  family=cumulative(parallel = FALSE ~ Size_Giant), data = ml)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII19i}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII19aai}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+Rsquared(m)
+```
+
+
+## Meds ordinal logistic regression without proportional odds for HEALTH
+```{r chunkORII18ii}
+# fit ordered logit model and store results 'm'
+m <- vglm(Health2 ~ Meds,  family=cumulative(parallel = FALSE ~ Meds), data = ml)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII19ii}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII19aaii}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+Rsquared(m)
+```
+
+
+
+# NOW DO MULTIPLE REGRESSION with backwards elimination of variables.
+# Partial proportional odds logistic regression odds for HEALTH.
+### Select model where BIC is least
+
+## MULTIPLE REGRESSION Round 1a with all variables
+```{r chunkORII22u}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Location + C_Diet + C_Gender + Animal_Career_BINARY + Size_Giant + D_Age_quant + D_Neuter + D_Diet + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII23u}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII23aau}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+## MULTIPLE REGRESSION 2ND round
+### REMOVE C_Diet as least significant in round 1
+```{r chunkORII24}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Location +  C_Gender + Animal_Career_BINARY + Size_Giant + D_Age_quant + D_Neuter + D_Diet + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+# AIC and BIC 
+```{r chunkORII25}
+AICvlm(m)
+BIC(m)
+```
+
+# Testing goodness of fit
+```{r chunkORII25a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+## MULTIPLE REGRESSION 3rd round
+### REMOVE NEUTER as least significant in round 2
+```{r chunkORII26}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Location + C_Gender + Animal_Career_BINARY + Size_Giant + D_Age_quant + D_Diet + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII27}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII27a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+## MULTIPLE REGRESSION 4th round
+### REMOVE Animal_Career_BINARY as least significant in round 3
+```{r chunkORII28}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Location + C_Gender + Size_Giant + D_Age_quant + D_Diet + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r cchunkORII29}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII29i}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+## MULTIPLE REGRESSION round 4b
+### REMOVE LOCATION as least significant in round 4a
+```{r chunkORII22}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ C_Gender + Size_Giant + D_Age_quant + D_Diet + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII23}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII23aa}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+
+
+
+
+
+## MULTIPLE REGRESSION 5th round
+### REMOVE D_Diet and replace with D_Diet_Vegan as least significant in round 4
+```{r chunkORII29a}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ C_Gender + Size_Giant + D_Age_quant + Meds + Visits2 + Therapeutic_Food + D_Diet_Vegan,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+# AIC and BIC 
+```{r chunkORII30}
+AICvlm(m)
+BIC(m)
+```
+
+# Testing goodness of fit
+```{r chunkORII30a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+## MULTIPLE REGRESSION 6th round
+### Try without D_Diet_Vegan as least significant in round 4
+```{r chunkORII31}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ C_Gender + Size_Giant + D_Age_quant + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII32}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII32a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+## MULTIPLE REGRESSION 7th round
+### REMOVE C_Gender as least significant in round 6
+```{r chunkORII33}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Size_Giant + D_Age_quant + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII34}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII34a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+# MULTIPLE REGRESSION 8th round.
+## Add D_Diet_Vegan back in to see if can improve model fit
+```{r chunkORII35}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Diet_Vegan + Size_Giant + D_Age_quant + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII36}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII36a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+## MULTIPLE REGRESSION 9th round.
+### Try D_Diet_Vegan with Therapeutic diet interaction
+```{r chunkORII37}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Size_Giant + D_Age_quant + Meds + Visits2 + Therapeutic_Food*D_Diet_Vegan,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII38}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII38a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+# THIS SEEMS TO BE THE BEST FIT MODEL OVERALL BASED ON BIC
+## Partial proportional odds logistic regression odds for HEALTH.
+```{r chunkORII45}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Size_Giant + D_Age_quant + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2 + Size_Giant),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII46}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII46a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+# THIS SEEMS TO BE THE BEST FIT MODEL OVERALL BASED ON BIC
+## Partial proportional odds logistic regression odds for HEALTH.
+## try this but without Size_Giant
+```{r chunkORII41ai}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Age_quant + Meds + Visits2 + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII42i}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII42ai}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+# THIS SEEMS TO BE THE BEST FIT MODEL OVERALL BASED ON BIC
+## Partial proportional odds logistic regression odds for HEALTH.
+## try this but without visits2
+```{r chunkORII41a}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Age_quant + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII42}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII42a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+# THIS SEEMS TO BE THE BEST FIT MODEL OVERALL BASED ON BI
+## Partial proportional odds logistic regression odds for HEALTH.
+## try BEST FIT but without therapeutic food
+```{r chunkORII43}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Age_quant + Meds + Visits2,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII44}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII44a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+
+# THIS SEEMS TO BE THE BEST FIT MODEL OVERALL BASED ON BIC???
+## Partial proportional odds logistic regression odds for HEALTH.
+## However, try but without D_Age_quant
+```{r chunkORII47}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~  Meds + Therapeutic_Food + Visits2,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII48}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORII48a}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+# THIS STILL SEEMS TO BE THE BEST FIT MODEL OVERALL BASED ON BIC
+## However, question over goodness of fit tests 
+## Partial proportional odds logistic regression odds for HEALTH.
+```{r chunk chunkORII49}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Age_quant + Visits2 + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORII50}
+AICvlm(m)
+BIC(m)
+```
+
+
+### Testing goodness of fit
+```{r chunkORII51}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+# TRY ADDING D_NEUTER TO SEE IF GOODNESS OF FIT IMPROVED WITHOUT DETRIMENT ON BOC
+## Partial proportional odds logistic regression odds for HEALTH.
+```{r chunk chunkORIII1}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Neuter + D_Age_quant +  Visits2 + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORIII2}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORIII3}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+# TRY ADDING C_GENDER TO SEE IF GOODNESS OF FIT IMPROVED WITHOUT DETRIMENT ON BOC
+## Partial proportional odds logistic regression odds for HEALTH.
+```{r chunk chunkORIII4}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ C_Gender + D_Age_quant +  Visits2 + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORIII5}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORIII6}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+# TRY ADDING D_DIET TO SEE IF GOODNESS OF FIT IMPROVED WITHOUT DETRIMENT ON BOC
+## Partial proportional odds logistic regression odds for HEALTH.
+```{r chunk chunkORIII7}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Diet + D_Age_quant +  Visits2 + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORIII8}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORIII9}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+# TRY ADDING D_Diet_VEGAN TO SEE IF GOODNESS OF FIT IMPROVED WITHOUT DETRIMENT ON BOC
+## Partial proportional odds logistic regression odds for HEALTH.
+```{r chunk chunkORIII10}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Diet_Vegan + D_Age_quant +  Visits2 + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORIII11}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORIII12}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+# OVERALL, THIS IS DEFINITELY THE BEST MODEL BASED ON BIC.
+## ADDING C_Gender, D_Neuter, D_Diet or D_Diet_Vegan do not improve GoF and nor do they improve BIC
+## Still question over goodness of fit tests, so binary LR probably more reliable
+## FINAL MODEL FOR REPORTING
+```{r chunk chunkORIV1}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ D_Age_quant + Visits2 + Meds + Therapeutic_Food,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### likelihood ratio test
+```{r}
+lrt.stat.vlm(m, all.out = TRUE)
+```
+
+### AIC and BIC 
+```{r chunkORIV2}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORIV3}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+### check collinearity
+##### nb need to convert to numeric as vif will not work with vglm
+```{r}
+m.vif <- lm(as.numeric(Health2) ~ D_Age_quant + Visits + Meds + Therapeutic_Food,  data = ml)
+car::vif(m.vif)
+```
+
+## check collinearity version 2
+```{r chunk chunkORIV1p}
+# convert Health2 to nominal for analysis
+Health2_nom <- factor(ml$Health2,order=FALSE)
+# fit multinomial logistic regression model and store results 'm'
+m <- vglm(Health2_nom ~ D_Age_quant + Visits + Meds + Therapeutic_Food,  multinomial, data = ml)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.95)))
+```
+
+
+# AIC and BIC 
+```{r chunkORIV2p}
+AICvlm(m)
+BIC(m)
+```
+
+
+
+# Create Figure of best fit model of ordinal health variable
+```{r FigOR}
+
+boxLabels = c("D_Age_quant [3,5]", "D_Age_quant [5,7]", "D_Age_quant [7,9]", "D_Age_quant [9,20]",
+              "Visits 1 : mild", "Visits 1 : significant", "Visits 2 : mild", "Visits 2 : significant",
+              "Visits 3+ : mild", "Visits 3+ : significant",  "Meds : mild", "Meds : significant", "Therapeutic food")
+# Enter OR and CI data. boxOdds are the odds ratios, 
+# boxCILow is the lower bound of the CI, boxCIHigh is the upper bound.
+df <- data.frame(yAxis = length(boxLabels):1, 
+                 boxOdds = c(1.390959384, 1.612518368, 2.377996872,
+                             4.557747427, 0.982548688, 0.345302236,
+                             2.365915881, 0.550070249, 3.676475145,
+                             2.649695170, 5.898049536, 9.136830400,
+                             2.217644182), 
+                 boxCILow = c(0.908475578, 1.038474670, 1.516492686,
+                              3.034923073, 0.625676445, 0.076204162,
+                              1.438145958, 0.123086271, 2.151841819,
+                              0.648023798, 4.276398916, 3.102304112,
+                              1.249421752), 
+                 boxCIHigh = c(2.12968632, 2.50387955, 3.72891289,
+                               6.84467484, 1.54297310 , 1.56466040,
+                               3.89220435, 2.45825368 , 6.28134901,
+                               10.83430041, 8.13464530, 26.90957003,
+                               3.93617744 ))
+
+# Plot
+p <- ggplot(df, aes(x = boxOdds, y = boxLabels)) 
+
+p + geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
+  geom_errorbarh(aes(xmax = boxCIHigh, xmin = boxCILow), size = .5, height = 
+                   .2, color = "gray50") +
+  geom_point(size = 3.5, color = c("blue","red","red","red","blue","blue","red","blue","red","blue","red","red","red")) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank()) +
+  theme(panel.grid.major = element_line(size = 0.25)) +
+   scale_x_log10(limits = c(0.06,40), breaks = c(0.12, 0.25, 0.5, 1, 2, 4, 8, 16, 32)) +
+  ylab("") +
+  xlab("\nOdds ratio (log scale)") +
+  theme(axis.text = element_text(face="bold")) +
+  theme(axis.title.x = element_text(face="bold")) +
+  annotate(geom = "text", y =1.5, x = 12, label ="Model P < 0.001\nPseudo  R^2 = 0.575",
+           size = 3.0, hjust = 0) + ggtitle("Ordinal logistic regression: illness severity") +
+ theme(plot.title = element_text(hjust = 0.5))
+ggsave("FigOR.TIFF")
+```
+
+
+
+# Finally, let's try a model with all variables
+```{r III32q}
+# fit partial proportional odds logistic regression model and store results 'm'
+m <- vglm(Health2 ~ Location + setting + Education_S + Animal_Career_BINARY 
+         + Income2 + C_Age2 + C_Gender + C_Diet + Size2 + D_Sex + D_Neuter  + D_Diet + Therapeutic_Food + Visits2 
+         + Meds + D_Age_quant,  data = ml,family=cumulative(parallel=FALSE ~ Meds + Visits2),reverse=TRUE)
+# view a summary of the model
+summary(m)
+
+# likelihood ratio test
+lrt.stat.vlm(m, all.out = TRUE)
+
+## odds ratios and 95% CI
+exp(cbind("Odds ratio" = -coef(m), -confint.default(m, level = 0.99)))
+```
+
+### AIC and BIC 
+```{r chunkORIII11q}
+AICvlm(m)
+BIC(m)
+```
+
+### Testing goodness of fit
+```{r chunkORIII12q}
+gofcat::lipsitz(m)
+gofcat::hosmerlem(m)
+gofcat::pulkroben(m, tables = TRUE)
+Rsquared(m)
+```
+
+
+
+
+
+
+
+
+# Create Figure of all-variable model of ordinal health variable
+```{r FigORall}
+
+boxLabels = c("Location: Other European","Location: North America","Location: Australia/New Zealand/Oceania","Location: Other","Setting_Rural","Setting_Equally_urban_and_rural","Education_S1_College","Education_S2_Grad","Education_S3_PG_or_PhD","Animal_Career_Yes","Income_Medium","Income_High","C_Age_30-39","C_Age_40-49","C_Age_50-59","C_Age_60+","C_Gender_Male","C_Diet_Omnivore","C_Diet_Pescatarian","C_Diet_Vegan","C_Diet_Vegetarian", "Size_Toy", "Size_Small","Size_Large", "Size_Giant", "D_Sex_Male","Neutered","D_Diet_Raw","D_Diet_Vegan","D_Diet_Vegetarian","Therapeutic food","Visits 1 : mild", "Visits 1 : significant", "Visits 2 : mild", "Visits 2 : significant", "Visits 3+ : mild","Visits 3+ : significant", "Meds : mild", "Meds : significant","D_Age_quant [3,5]", "D_Age_quant [5,7]", "D_Age_quant [7,9]", "D_Age_quant [9,20]")
+# Enter OR and CI data. boxOdds are the odds ratios, 
+# boxCILow is the lower bound of the CI, boxCIHigh is the upper bound.
+df <- data.frame(yAxis = length(boxLabels):1, 
+                 boxOdds = c(1.429138305, 1.351492729, 1.183918812,
+                             1.077880850, 1.137625808, 0.902960081,
+                             0.744251994, 0.881929409, 0.649700717,
+                             0.943292408, 0.857020706, 0.599718639,
+                             0.861299787, 0.764477669, 0.624357676,
+                             0.606351314, 0.675381705, 1.145747778,
+                             1.041385707, 0.881803420, 0.949669265,
+                             1.766375728, 1.058406139, 1.158982525,
+                             2.413563532, 0.940262395, 1.060310411,
+                             0.958242082, 0.581189653, 0.794997098,
+                             2.268327529, 0.983644952, 0.361470135,
+                             2.342917937, 0.562285368, 3.746995072,
+                             2.828824404, 6.164203825, 8.932077618,
+                             1.440391171, 1.709182752, 2.586246119,
+                             5.422600173), 
+                 boxCILow = c(0.899514300, 0.758807541, 0.600093350,
+                              0.462411202, 0.806476289, 0.640227547,
+                              0.496234139, 0.586273057, 0.420623835,
+                              0.661904707, 0.587856819, 0.360356281,
+                              0.547630426, 0.477770825, 0.390116838,
+                              0.364265277, 0.385724692, 0.796203283,
+                              0.560012320, 0.539594843, 0.586198284,
+                              0.722780632, 0.726746532, 0.840853039,
+                              1.222538938, 0.713095575, 0.723155420,
+                              0.695518125, 0.333134503, 0.265402967,
+                              1.261451258, 0.617904888, 0.077847212,
+                              1.394592219, 0.122858623, 2.144028043,
+                              0.674410067, 4.416222807, 3.039134748,
+                              0.931730042, 1.083335306, 1.613873316,
+                              3.496536008), 
+                 boxCIHigh = c(2.27059903, 2.40710918, 2.33574285,
+                               2.51254105, 1.60474957, 1.27351113,
+                               1.11622919, 1.32668468, 1.00353567,
+                               1.34430313, 1.24942753, 0.99807459,
+                               1.35463131, 1.22323523, 0.99924553,
+                               1.00932463, 1.18255444, 1.64874725,
+                               1.93653631, 1.44103911, 1.53850964,
+                               4.31677756, 1.54142264, 1.59747355,
+                               4.76491075, 1.23979646, 1.55465635,
+                               1.32020699, 1.01394905, 2.38136142,
+                               4.07888117, 1.56586784, 1.67842437,
+                               3.93610719, 2.57340370, 6.54840878,
+                               11.86555169, 8.60405158, 26.25155420,
+                               2.22674662, 2.69658495, 4.14448205,
+                               8.40963530))
+
+
+# Plot
+p <- ggplot(df, aes(x = boxOdds, y = boxLabels)) 
+p + geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
+  geom_errorbarh(aes(xmax = boxCIHigh, xmin = boxCILow), size = .5, height = 
+                   .2, color = "gray50") +
+  geom_point(size = 1.0, color = c("blue", "blue", "blue", "blue", "blue","blue",
+                                   "blue", "blue", "red", "blue", "blue","red",
+                                   "blue", "blue", "red", "red", "blue","blue",
+                                   "blue", "blue", "blue", "blue", "blue","blue",
+                                   "red", "blue", "blue", "blue", "blue","blue",
+                                   "red", "blue", "blue", "red","blue", "red",
+                                    "blue", "red", "red","blue", "red", "red", "red")) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank()) +
+  theme(panel.grid.major = element_line(size = 0.25)) +
+  scale_x_log10(limits = c(0.007, 40), breaks = c(0.015, 0.03, 0.06, 0.12, 0.25, 0.5, 1, 2, 4, 8, 16, 32)) +
+  ylab("") +
+  xlab("\nOdds ratio (log scale)") +
+  theme(axis.text = element_text(face="bold")) +
+    theme(axis.text.y = element_text(size = 4.0)) +
+      theme(axis.text.x = element_text(size = 4.0)) +
+  theme(axis.title.x = element_text(face="bold", size =6.0)) +
+  annotate(geom = "text", y = 2, x = 7.0, label ="Model P < 0.001\nPseudo  R^2 = 0.599", size = 1.8, hjust = 0) +
+  ggtitle("Ordinal logistic regression: illness severity") +
+  theme(plot.title = element_text(hjust = 0.5, size = 8)) +
+  theme(aspect.ratio= 1.25)
+
+
+ggsave("FigORall.TIFF")
+```
+
+
+
+
+
+
+

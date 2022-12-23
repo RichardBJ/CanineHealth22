@@ -1,0 +1,558 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+## Run readfile first first:
+
+```{r include=FALSE, echo = FALSE, results='hide'}
+LOAD=FALSE
+if (LOAD){
+  load("ml_read_data_101.RData")
+} else{
+  # So re-run the read script
+  knitr::knit("Read_data_101.rmd",output="temp")
+}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
+```
+
+```{r checkload}
+head(ml)
+```
+
+## TRY XGBoost ALL USEFUL DATA
+# Pre-process to numeric
+```{r preprocess_XG_ALL}
+# Remove these models from the environment in case confusion later.
+# If they don't exist a warning is displayed but code continues to run
+suppressWarnings(rm(cv_res))
+suppressWarnings(rm(bstSparse))
+
+factors <- dplyr::select(ml, Location)
+factors <- one_hot(as.data.table(factors),dropUnusedLevels = TRUE)
+ordered <- as.data.frame(cbind(ml$Income, ml$Education, ordered(ml$D_Age_quant),ml$C_Age, ml$Size2, ordered(ml$Visits)))
+names(ordered) <- c("Income","Education","D_Age_quant", "C_Age","Size", "Visits")
+numeric <- dplyr::select(ml,D_Age)
+binary <- as.data.frame(cbind(as.numeric(ml$C_Gender)-1, ml$D_Sex, ml$D_Neuter,ml$Meds,  ml$D_Diet_Vegan, ml$D_Diet_Raw,ml$C_Diet_Vegan, as.factor(ml$Animal_Career_BINARY),  as.factor(ml$Therapeutic_Food), ml$Any_Health_Problem))
+# NOTE TO ALLOW RECYCLING THE MODEL HEALTH PROBLEMS BEING RENAMED Health_Binary
+names(binary)  <- c("C_Gender", "D_Sex", "Neuter", "Meds","D_Diet_Vegan","D_Diet_Raw", "C_Diet_Vegan","BIN_Animal_Career","Therapeutic_Food", "Health_Binary")
+#Omitting numeric age!
+#XGdata <- cbind(factors,ordered,numeric,binary)
+XGdata <- cbind(factors,ordered,binary)
+XGdata$C_Gender<-as.numeric(XGdata$C_Gender)
+XGdata$D_Sex<-as.numeric(XGdata$D_Sex)-1
+XGdata$Neuter<-as.numeric(XGdata$Neuter)-1
+XGdata$Meds<-as.numeric(XGdata$Meds)-1
+XGdata$D_Diet_Vegan<-as.numeric(as.factor(XGdata$D_Diet_Vegan))-1
+XGdata$D_Diet_Raw<-as.numeric(as.factor(XGdata$D_Diet_Raw))-1
+XGdata$C_Diet_Vegan<-as.numeric(as.factor(XGdata$C_Diet_Vegan))-1
+XGdata$BIN_Animal_Career <- as.numeric(XGdata$BIN_Animal_Career)-1
+XGdata$Therapeutic_Food <- as.numeric(XGdata$Therapeutic_Food)-1
+
+XGdata$Health_Binary <- as.numeric(XGdata$Health_Binary)
+```
+
+# Pseudo correlation matrix given all data as numeric
+```{r Corrplot}
+WRITE=TRUE
+cdata <- dplyr::select(XGdata,-c("Health_Binary"))
+cdata <- cdata[complete.cases(cdata),]
+names(cdata)[1:5] <- c("UK", "Other European","North American", "Oceania", "Location Other")
+names(cdata)[8:9] <- c("Dog Age","Owner Age" )
+names(cdata)[11:14] <- c("Vet Visits", "Owner Gender", "Dog Sex", "Neuter Status")
+names(cdata)[16:20] <- c("Dog Vegan Diet", "Dog Raw Diet", "Owner Vegan Diet", "Animal Career",
+                         "Therapeutic Diet")
+
+#Old method
+#cor.mat <- round(cor(cdata,use="pairwise.complete.obs", method="kendall"),2)
+
+# get the correlation matrix using rstatix, slower but allows direct p-val return; and the correlation values itself are identical.
+corMatrix <- rstatix::cor_mat(cdata, method = "kendall")
+#Convert first column to rownames
+corMatrix <- corMatrix %>% remove_rownames %>% column_to_rownames(var="rowname")
+
+# get the p.values
+corMatrix_p <- as.data.frame(corMatrix %>% rstatix::cor_get_pval())
+#  drop the p-values to allow extra functions
+cor.Mat <- as.matrix(DescTools::StripAttr(corMatrix, attr_names = "pvalue") )
+
+#Log all but the rownames
+tmpnames <- dplyr::select(corMatrix_p,rowname) 
+corMatrix_p <- dplyr::select(corMatrix_p,-rowname)
+lgcorMatrix_p <- log10(corMatrix_p)
+logmatrix <- cbind(tmpnames,round(lgcorMatrix_p,2))
+
+if (WRITE){
+  write.csv(corMatrix_p, "corr-p-values.csv")
+  write.csv(round(corMatrix,2), "corr-values.csv")
+  write.csv(logmatrix,"corr-logp-values.csv")
+  }
+
+rm(lgcorMatrix_p,tmpnames)
+
+hc <- hclust(as.dist(1-cor.Mat), method = "ward.D2")
+# Plot here first
+
+# Then save figure
+tiff("hclust.tif",
+  width     = 3.25,
+  height    = 3.25,
+  units     = "in",
+  res       = 300,
+  pointsize = 4
+)
+plot(hc, hang=-1, cex=0.9)
+dev.off()
+
+# Using Kendall which is good for ranks
+cex=1.3
+srt=45
+tmp <- as.matrix(corMatrix_p)
+rownames(tmp) <- rownames(cor.Mat)
+
+# Calculate a BH threshold
+# Get all the p-values as a Vector, just get the bottom part (don't duplicate)
+ps <- tmp[lower.tri(tmp,diag=FALSE)]
+bht <- get_bh_threshold(ps,alpha=0.05)
+
+corrplot::corrplot(cor.Mat, p.mat = tmp, type="lower", order="hclust", hclust.method="ward.D2",insig = "blank", tl.col="black", sig.level = bht, tl.srt=45,tl.cex=cex/2,na.label=" ",cl.cex = cex/2)
+
+#Then save figure
+tiff("HealthBinaryCorPlot.tif",  
+  width     = 3.25,
+  height    = 3.25,
+  units     = "in",
+  res       = 300,
+  pointsize = 4)
+  par(bg=NA)
+corrplot::corrplot(cor.Mat, p.mat = tmp, type="lower", order="hclust", hclust.method="ward.D2",insig = "blank", tl.col="black", sig.level = bht, tl.srt=45,tl.cex=cex,na.label=" ",cl.cex = cex)
+
+dev.off()
+```
+# Augment and Train simple XGboost with everything in
+```{r TrainSimple, echo=TRUE, include=TRUE, warning=FALSE, errors=FALSE, warning=FALSE, message=FALSE,results='hide'}
+# Remove these models from the environment in case confusion later.
+# If they don't exist a warning is displayed but code continues to run
+rm(cv_res)
+rm(bstSparse)
+XGdata <- XGdata[complete.cases(XGdata),]
+set.seed(2020)
+# A simple split of training and data.
+if (1==2) {dt = sort(sample(nrow(XGdata), nrow(XGdata)*.85))
+train<-XGdata[dt,]
+}
+# OR  Better split with stratification to avoid a potentially empty
+# dependent variable set.
+XGd <- initial_split(XGdata, prop = 0.7, strata = Health_Binary)
+train <-as.data.frame(training(XGd))
+trainX<-train[,1:(ncol(train)-1)]
+trainY<-train[,ncol(train)]
+#Models work best if training data augmented
+#Two alternative methods. Bruteforce seems OK.
+augment="bruteforce"
+if (augment=="SMOTE")
+{train.SMOTE <- SMOTE(trainX,trainY,K=5,dup_size=10)
+trainX <- train.SMOTE$data[,1:ncol(train)-1]
+trainY <- as.numeric(train.SMOTE$data[,ncol(train)])
+train.SMOTE <- SMOTE(trainX,trainY,K=5,dup_size=6)
+trainX <- train.SMOTE$data[,1:ncol(train)-1]
+trainY <- as.numeric(train.SMOTE$data[,ncol(train)])
+} else if (augment=="bruteforce"){
+  #trouble with this method is it may create extra levels...
+  #somehow need to constrain to 0 to max level AND add or subtract but still not go <0.
+  #get column max and min
+  cmax <- train %>% summarise_if (is.numeric, max)
+  cmin <- train %>% summarise_if(is.numeric, min)
+  #Firstly BALANCE the dataset
+  reps=2
+  bigTrain <- train
+  classtrain <- subset(train,Health_Binary==0)
+  for (i in 1:reps){
+      AugmentMe <- as.data.frame(matrix(rbinom(ncol(classtrain)*nrow(classtrain), 1, .2), ncol=ncol(classtrain)) )
+      names(AugmentMe) <- names(classtrain)
+      classtrain <- subset(train,Health_Binary==0)
+      #last column is the outcome, dont change that
+      AugmentMe[,ncol(AugmentMe)] <- 0
+      if((reps %% 2) == 0){
+      newbatch <- classtrain+AugmentMe
+      } else{
+       newbatch <- classtrain-AugmentMe
+      }
+      
+      for (c in 1:ncol(train)){
+        mycol = names(cmax[c])
+        newbatch <- subset(newbatch, get(mycol) <= as.numeric(cmax[c]))
+        newbatch <- subset(newbatch, get(mycol) >= as.numeric(cmin[c]))
+      }      
+      bigTrain <- rbind(bigTrain,newbatch )
+  }
+  train <- bigTrain
+# NOW just augment generally.  
+  reps=5
+  bigTrain <- train
+  for (i in 1:reps){
+      AugmentMe <- as.data.frame(matrix(rbinom(ncol(train)*nrow(train), 1, .2), ncol=ncol(train)) )
+      names(AugmentMe) <- names(train)
+      #last column is the outcome, dont change that
+      AugmentMe[,ncol(AugmentMe)] <- 0
+      if((reps %% 2) == 0){
+      newbatch <- train+AugmentMe
+      } else{
+       newbatch <- train-AugmentMe
+      }
+      
+      for (c in 1:ncol(train)){
+        mycol = names(cmax[c])
+        newbatch <- subset(newbatch, get(mycol) <= as.numeric(cmax[c]))
+        newbatch <- subset(newbatch, get(mycol) >= as.numeric(cmin[c]))
+      }      
+      bigTrain <- rbind(bigTrain,newbatch )
+  }
+  train <- bigTrain
+  
+  rm(bigTrain)
+  trainX <- train[,1:ncol(train)-1]
+  trainY <- train[,ncol(train)]
+  }
+length(trainY[trainY==0])
+length(trainY[trainY>0])
+#new method
+test<-as.data.frame(testing(XGd))
+testX<-test[,1:ncol(test)-1]
+testY<-test[,ncol(test)]
+#weight<-nrow(ml)/(1-sum(ml$Bhealth)) wont work now changed to factor wat above
+weight=1
+#weight <- weight^0.5 #some say otherwise skews
+param <- list(max.depth = 20, eta = 0.01, nthread =5,  objective = "multi:softprob", num_class=2, min_child_weight=30, subsample=0.25, gamma = 0.1, booster='gbtree')
+#"binary:logistic"
+
+#This is one quick way to tune, remembering that itterations is kind of the same as number of trees.
+cv_res <- xgb.cv(data = as.matrix(trainX), label = trainY, params=param, nrounds = 2000,early_stopping_rounds=20,print_every_n=10,nfold=5,eval_metric='auc')
+bstSparse <- xgboost(data = as.matrix(trainX), label = trainY, nrounds = cv_res$best_iteration, params = param, print_every_n=10,eval_metric='auc')
+
+#Facile test on train.... to delete
+pred <-predict(bstSparse,as.matrix(trainX), reshape=TRUE)
+prediction <- as.numeric(pred[,2] > 0.60)
+roc(trainY, pred[,2])
+confusionMatrix(as.factor(prediction),as.factor(trainY))
+######
+
+```
+# Draw ROC ALL Variables included, Any health issue binary
+```{r roc1_ALL}
+pred <-predict(bstSparse,as.matrix(testX), reshape=TRUE)
+pred_obj <- prediction(pred[,2],testY)
+   
+xgb.perf <- performance(pred_obj, "tpr", "fpr")
+
+pts <- seq(0.1, 0.9, by=0.1)
+text = 1.5 # Text size
+par(bg=NA, cex=1.5/2, cex.axis=1.5/2, cex.lab=1.5/2)
+ROCR::plot(xgb.perf,
+     avg="threshold",
+     colorize=TRUE,
+     lwd=1,
+     main="XGBoost: Mild, significant or serious illness",
+     print.cutoffs.at=pts,
+     cutoff.label.function = function(x) {round(x, 2) },
+     text.adj=c(-1, 1),
+     colorkey.relwidth=1) 
+
+grid(col="lightgray")
+axis(1, at=seq(0, 1, by=0.1))
+axis(2, at=seq(0, 1, by=0.1))
+abline(v=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+abline(h=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+lines(x=c(0, 1), y=c(0, 1), col="black", lty="dotted")
+
+tiff("xgROCsimpleFull.tif",
+  width     = 3.25,
+  height    = 3.25,
+  units     = "in",
+  res       = 300,
+  pointsize = 4
+)
+par(bg=NA, cex=1.5, cex.axis=1.5, cex.lab=1.5)
+ROCR::plot(xgb.perf,
+     avg="threshold",
+     colorize=TRUE,
+     lwd=3,
+     main="XGBoost: Mild, significant or serious illness",
+     print.cutoffs.at=pts,
+     cutoff.label.function = function(x) {round(x, 2) },
+     text.adj=c(-1, 1),
+     colorkey.relwidth=1) 
+grid(col="lightgray")
+axis(1, at=seq(0, 1, by=0.1))
+axis(2, at=seq(0, 1, by=0.1))
+abline(v=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+abline(h=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+lines(x=c(0, 1), y=c(0, 1), col="black", lty="dotted")
+dev.off()
+
+res <- pROC::roc(testY, pred[,2],ci=TRUE, conf.level=0.99)
+res$auc
+res$ci
+
+```
+# XGboostPrediction
+## Just an example threshold
+```{r pred_all_1}
+# CHOOSE A THRESHOLD FROM THE ROC
+thresh=0.30
+pred <-predict(bstSparse,as.matrix(testX), reshape=TRUE)
+prediction <- as.numeric(pred[,2] > thresh)
+confusionMatrix(as.factor(prediction),as.factor(testY))
+
+```
+
+# Calculate importance all
+```{r simpleimportance_all}
+importance_matrix <- xgb.importance(model = bstSparse)
+print(importance_matrix)
+
+xgb.plot.importance(importance_matrix = importance_matrix)
+importance_matrix$Feature <-c("Vet Visits","Meds","Dog Age","Owner Age","Education","Dog Vegan Diet","Size","Income",
+             "Dog Raw Diet","UK", "Dog Sex","Owner Gender","Other European","Animal Career",
+             "Owner Vegan Diet","Oceania","Neuter Status", "Location Other","North American")
+
+tiff("xgAnybwIMPsimpleFull.tif")
+xgb.plot.importance(importance_matrix = importance_matrix)
+dev.off()
+m_imp <-reshape::melt(importance_matrix,id_vars=Feature)
+
+names(m_imp) <- c("Feature", "XGBoost Parameter", "Value")
+ggplot(m_imp,aes(x=reorder(Feature,-Value),y=Value,fill=`XGBoost Parameter`))+geom_bar(position="stack", stat="identity")+xlab("Feature") + ylab("Value (Au)")+
+  theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),legend.position=c(0.98,0.75),legend.justification="right")
+tiff("XGAnySimpFullImp.tif",  
+  width     = 6.5,
+  height    = 3.25,
+  units     = "in",
+  res       = 300,
+  pointsize = 4)
+
+  par(bg=NA)
+  ggplot(m_imp,aes(x=reorder(Feature,-Value),y=Value,fill=`XGBoost Parameter`))+geom_bar(position="stack", stat="identity")+xlab("Feature") + ylab("Value (Au)")+
+  theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),legend.position=c(0.98,0.75),legend.justification="right")
+dev.off
+
+```
+
+## Reduced XGBoost
+Now XGBoost on the data without meds and visits or therapeutic foods
+# Simple XGBoost on reduced variable set, still Any Health Issue binaru
+```{r train_XG_reducedecho=TRUE, include=TRUE, warning=FALSE, errors=FALSE, warning=FALSE, message=FALSE,results='hide'}
+rm(cv_res)
+rm(bstSparse)
+
+factors <- dplyr::select(ml, Location)
+factors <- mltools::one_hot(as.data.table(factors),dropUnusedLevels = TRUE)
+ordered <- as.data.frame(cbind(ml$Income, ml$Education, ordered(ml$D_Age_quant),ml$C_Age, ml$Size))
+names(ordered) <- c("Income","Education","D_Age_quant", "C_Age","Size")
+#numeric <- dplyr::select(ml,D_Age)
+binary <- as.data.frame(cbind(as.numeric(ml$C_Gender)-1, ml$D_Sex, ml$D_Neuter,ml$D_Diet_Vegan, ml$C_Diet_Vegan, as.factor(ml$Animal_Career_BINARY),   ml$Any_Health_Problem))
+names(binary)  <- c("C_Gender", "D_Sex", "Neuter", "D_Diet_Vegan", "C_Diet_Vegan","BIN_Animal_Career", "Health_Binary")
+#Omitting numeric age!
+#XGdata <- cbind(factors,ordered,numeric,binary)
+XGdata <- cbind(factors,ordered,binary)
+XGdata <- XGdata[complete.cases(XGdata),]
+XGdata$C_Gender<-as.numeric(XGdata$C_Gender)
+XGdata$D_Sex<-as.numeric(XGdata$D_Sex)-1
+XGdata$Neuter<-as.numeric(XGdata$Neuter)-1
+XGdata$D_Diet_Vegan<-as.numeric(as.factor(XGdata$D_Diet_Vegan))-1
+XGdata$C_Diet_Vegan<-as.numeric(as.factor(XGdata$C_Diet_Vegan))-1
+XGdata$BIN_Animal_Career <- as.numeric(XGdata$BIN_Animal_Career)-1
+XGdata$Health_Binary <- as.numeric(XGdata$Health_Binary)
+
+#XGdata$Health_Binary <- XGdata$Health_Binary-1
+set.seed(2020)
+if (1==2) {dt = sort(sample(nrow(XGdata), nrow(XGdata)*.85))
+train<-XGdata[dt,]
+}
+# OR
+XGd <- initial_split(XGdata, prop = 0.7, strata = Health_Binary)
+train <-as.data.frame(training(XGd))
+trainX<-train[,1:(ncol(train)-1)]
+trainY<-train[,ncol(train)]
+#train.data <- cbind(trainY,trainX)
+augment="bruteforce"
+if (augment=="SMOTE")
+{train.SMOTE <- SMOTE(trainX,trainY,K=5,dup_size=10)
+trainX <- train.SMOTE$data[,1:ncol(train)-1]
+trainY <- as.numeric(train.SMOTE$data[,ncol(train)])
+train.SMOTE <- SMOTE(trainX,trainY,K=5,dup_size=6)
+trainX <- train.SMOTE$data[,1:ncol(train)-1]
+trainY <- as.numeric(train.SMOTE$data[,ncol(train)])
+} else if (augment=="bruteforce"){
+  #trouble with this method is it may create extra levels...
+  #somehow need to constrain to 0 to max level AND add or subtract but still not go <0.
+  #get column max and min
+  cmax <- train %>% summarise_if (is.numeric, max)
+  cmin <- train %>% summarise_if(is.numeric, min)
+  #Firstly BALANCE the dataset
+  reps=2
+  bigTrain <- train
+  classtrain <- subset(train,Health_Binary==0)
+  for (i in 1:reps){
+      AugmentMe <- as.data.frame(matrix(rbinom(ncol(classtrain)*nrow(classtrain), 1, .2), ncol=ncol(classtrain)) )
+      names(AugmentMe) <- names(classtrain)
+      classtrain <- subset(train,Health_Binary==0)
+      #last column is the outcome, dont change that
+      AugmentMe[,ncol(AugmentMe)] <- 0
+      if((reps %% 2) == 0){
+      newbatch <- classtrain+AugmentMe
+      } else{
+       newbatch <- classtrain-AugmentMe
+      }
+      
+      for (c in 1:ncol(train)){
+        mycol = names(cmax[c])
+        newbatch <- subset(newbatch, get(mycol) <= as.numeric(cmax[c]))
+        newbatch <- subset(newbatch, get(mycol) >= as.numeric(cmin[c]))
+      }      
+      bigTrain <- rbind(bigTrain,newbatch )
+  }
+  train <- bigTrain
+# NOW just augment generally.  
+  reps=5
+  bigTrain <- train
+  for (i in 1:reps){
+      AugmentMe <- as.data.frame(matrix(rbinom(ncol(train)*nrow(train), 1, .2), ncol=ncol(train)) )
+      names(AugmentMe) <- names(train)
+      #last column is the outcome, dont change that
+      AugmentMe[,ncol(AugmentMe)] <- 0
+      if((reps %% 2) == 0){
+      newbatch <- train+AugmentMe
+      } else{
+       newbatch <- train-AugmentMe
+      }
+      
+      for (c in 1:ncol(train)){
+        mycol = names(cmax[c])
+        newbatch <- subset(newbatch, get(mycol) <= as.numeric(cmax[c]))
+        newbatch <- subset(newbatch, get(mycol) >= as.numeric(cmin[c]))
+      }      
+      bigTrain <- rbind(bigTrain,newbatch )
+  }
+  train <- bigTrain
+  
+  rm(bigTrain)
+  trainX <- train[,1:ncol(train)-1]
+  trainY <- train[,ncol(train)]
+  }
+length(trainY[trainY==0])
+length(trainY[trainY>0])
+#new method
+test<-as.data.frame(testing(XGd))
+testX<-test[,1:ncol(test)-1]
+testY<-test[,ncol(test)]
+#weight<-nrow(ml)/(1-sum(ml$Bhealth)) wont work now changed to factor wat above
+weight=1
+#weight <- weight^0.5 #some say otherwise skews
+param <- list(max.depth = 20, eta = 0.01, nthread =5,  objective = "multi:softprob", num_class=2, min_child_weight=30, subsample=0.25, gamma = 0.1, booster='gbtree')
+#"binary:logistic"
+
+#This is one quick way to tune, remembering that itterations is kind of the same as number of trees.
+cv_res <- xgb.cv(data = as.matrix(trainX), label = trainY, params=param, nrounds = 2000,early_stopping_rounds=20,print_every_n=10,nfold=5,eval_metric='auc')
+bstSparse <- xgboost(data = as.matrix(trainX), label = trainY, nrounds = cv_res$best_iteration, params = param, print_every_n=10,eval_metric='auc')
+#cv_res$best_iteration ,scale_pos_weight=weight
+
+#Facile test on train.... to delete
+pred <-predict(bstSparse,as.matrix(trainX), reshape=TRUE)
+prediction <- as.numeric(pred[,2] > 0.67)
+roc(trainY, pred[,2])
+confusionMatrix(as.factor(prediction),as.factor(trainY))
+######
+```
+# Draw ROC reduced 1
+```{r roc1_RED}
+pred <-predict(bstSparse,as.matrix(testX), reshape=TRUE)
+pred_obj <- prediction(pred[,2],testY)
+   
+xgb.perf <- performance(pred_obj, "tpr", "fpr")
+pts <- seq(0.1, 0.6, by=0.1)
+text = 1.5 # Text size
+par(bg=NA, cex=1.5/2, cex.axis=1.5/2, cex.lab=1.5/2)
+ROCR::plot(xgb.perf,
+     avg="threshold",
+     colorize=TRUE,
+     lwd=1,
+     main="XGBoost: Mild, significant or serious illness",
+     print.cutoffs.at=pts,
+     cutoff.label.function = function(x) {round(x, 3) },
+     text.adj=c(-0.5, 0.9),
+     text.cex=0.5) 
+grid(col="lightgray")
+axis(1, at=seq(0, 1, by=0.1))
+axis(2, at=seq(0, 1, by=0.1))
+abline(v=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+abline(h=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+lines(x=c(0, 1), y=c(0, 1), col="black", lty="dotted")
+tiff("XGROCsimpleReduced.tif",
+  width     = 3.25,
+  height    = 3.25,
+  units     = "in",
+  res       = 300,
+  pointsize = 4
+)
+par(bg=NA, cex=1.5, cex.axis=1.5, cex.lab=1.5)
+ROCR::plot(xgb.perf,
+     avg="threshold",
+     colorize=TRUE,
+     lwd=3,
+     main="XGBoost: Mild, significant or serious illness",
+     print.cutoffs.at=pts,
+     cutoff.label.function = function(x) {round(x, 3) },
+     text.adj=c(-0.3, 1.3),
+     colorkey.relwidth=1) 
+grid(col="lightgray")
+axis(1, at=seq(0, 1, by=0.1))
+axis(2, at=seq(0, 1, by=0.1))
+abline(v=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+abline(h=c(0.1, 0.3, 0.5, 0.7, 0.9), col="lightgray", lty="dotted")
+lines(x=c(0, 1), y=c(0, 1), col="black", lty="dotted")
+dev.off()
+
+res <- pROC::roc(testY, pred[,2],ci=TRUE, conf.level=0.99)
+res$auc
+res$ci
+```
+
+# XGboostPrediction REDUCED One
+```{r pred_RED_1}
+# CHOOSE A THRESHOLD FROM THE ROC
+thresh=0.775
+pred <-predict(bstSparse,as.matrix(testX), reshape=TRUE)
+prediction <- as.numeric(pred[,2] > thresh)
+confusionMatrix(as.factor(prediction),as.factor(testY))
+
+```
+
+# Calculate importance REDUCED
+```{r simpleimportance_RED}
+importance_matrix <- xgb.importance(model = bstSparse)
+print(importance_matrix)
+xgb.plot.importance(importance_matrix = importance_matrix)
+importance_matrix$Feature <-c("Dog Age","Owner Age","Education","Owner Gender", "Size","Dog Sex","UK","Dog Vegan Diet",
+                              "Location Other",  "Oceania", "Income", "Other European", "Neuter Status",
+                              "Owner Vegan Diet","Animal Career", "North American")
+xgb.plot.importance(importance_matrix = importance_matrix)
+m_imp <-reshape::melt(importance_matrix,id_vars=Feature)
+names(m_imp) <- c("Feature", "XGBoost Parameter", "Value")
+ggplot(m_imp,aes(x=reorder(Feature,-Value),y=Value,fill=`XGBoost Parameter`))+geom_bar(position="stack", stat="identity")+xlab("Feature") + ylab("Value (Au)")+
+  theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),legend.position=c(0.98,0.75),legend.justification="right")
+
+tiff("XGImpReduced_Simple.tif",  
+  width     = 6.5,
+  height    = 3.25,
+  units     = "in",
+  res       = 300,
+  pointsize = 4)
+
+  par(bg=NA)
+  ggplot(m_imp,aes(x=reorder(Feature,-Value),y=Value,fill=`XGBoost Parameter`))+geom_bar(position="stack", stat="identity")+xlab("Feature") + ylab("Value (Au)")+
+  theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),legend.position=c(0.98,0.75),legend.justification="right")
+
+dev.off
+```
